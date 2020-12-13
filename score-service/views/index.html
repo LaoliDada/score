@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <table id='content'>
+   
+  </table>
+  <button id="calculate" disabled="disabled">计算</button>
+  <script>
+
+    var dataArr = [],
+    calculateDom = document.getElementById('calculate');
+
+    wsServer = new WebSocket('ws://127.0.0.1:8000');
+    wsServer.onopen = (e)=> {
+      render(dataArr);
+      wsServer.onmessage = function(data){
+        calculateDom.removeAttribute('disabled');
+        let disposeData = JSON.parse(data.data);
+        with (disposeData){
+          disposeData.sum = Number(first)+Number(second)+Number(third);
+        }
+        dataArr.push(disposeData);
+        render(dataArr);
+      }
+    };
+
+    function render(dataArr,isAll = false){
+      let htmlStr = ` <tr>
+        <th>序号</th>
+        <th>主题准备及分享思路主题准备及分享思路</th>
+        <th>表达能力及互动效果表达能力及互动效果</th>
+        <th>分享文件制作</th>
+        <th>总分</th>
+      </tr>`;
+      document.getElementById("content").innerHTML = htmlStr;
+      dataArr.forEach((item,index)=>{
+        htmlStr+=`<tr>
+          <td>${index==dataArr.length-1 && isAll?'合计平均分':index+1+'.'}</td>
+          <td>${item.first}</td>
+          <td>${item.second}</td>
+          <td>${item.third}</td>
+          <td>${item.sum}</td>
+          </tr>`
+        document.getElementById("content").innerHTML = htmlStr;
+      })
+    }
+    
+   calculateDom.addEventListener("click",()=>{
+     let dataArrAndAll =JSON.parse(JSON.stringify(dataArr));
+        let obj = {
+          first:0,
+          second:0,
+          third:0,
+          sum:0
+        }
+        dataArrAndAll.forEach((item)=>{
+          obj.first+=Number(item.first)
+          obj.second+=Number(item.second)
+          obj.third+=Number(item.third)
+        })
+        obj.first = obj.first/dataArrAndAll.length;
+        obj.second = obj.second/dataArrAndAll.length;
+        obj.third = obj.third/dataArrAndAll.length;
+        obj.sum = (obj.first+obj.second+obj.third);
+        dataArrAndAll.push(obj);
+      render(dataArrAndAll,true)
+    })
+  </script>
+</body>
+</html>
+<style>
+  *{
+    margin: 0;
+    padding:0;
+  }
+  button{
+    display: block;
+    width:80px;
+    height:36px;
+    margin:20px auto 0;
+  }
+  table{
+    margin:100px auto 0;
+  }
+  table,td,th{
+    border:1px solid #ccc;
+    border-collapse: collapse;
+  }
+  td,th{
+    padding:8px 16px;
+    font-weight: normal;
+    color:333;
+    text-align: center;
+  }
+</style>
