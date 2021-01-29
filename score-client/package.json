@@ -10,7 +10,9 @@
     "build": "node build/build.js"
   },
   "dependencies": {
+    "axios": "^0.21.1",
     "element-ui": "^2.14.1",
+    "punycode": "^2.1.1",
     "vue": "^2.5.2",
     "vue-router": "^3.0.1"
   },
@@ -59,5 +61,7 @@
     "> 1%",
     "last 2 versions",
     "not ie <= 8"
-  ]
+  ],
+  "main": "index.js",
+  "license": "MIT"
 }

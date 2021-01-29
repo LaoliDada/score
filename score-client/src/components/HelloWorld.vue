@@ -1,12 +1,13 @@
 <template>
 <div class="hello" v-loading="loading">
-  <el-form :rules="rule" ref="form" :model="form">
+  <h3 v-if="scoreDetail.name">{{scoreDetail.name+'-'+scoreDetail.title}}</h3>
+  <el-form :rules="rule" ref="form" :model="form" v-if="scoreDetail.scoreIsEnd === 2">
     <el-table :data="tableData" :span-method="objectSpanMethod" style="width: 100%">
       <el-table-column label="评价模板" width="150">
         <el-table-column prop="a" label="评分维度" width="150">
         </el-table-column>
       </el-table-column>
-      <el-table-column label="主题准备及分享思路主题准备及分享思路（总占比总占比50分）">
+      <el-table-column label="主题准备及分享思路主题准备及分享思路（总占比50分）">
         <el-table-column prop="name" label="主题不够突出。内容构思一般，思路不够清晰，逻辑混乱（0~20）">
           <template slot-scope="scope">
             <el-form-item prop="first">
@@ -29,7 +30,7 @@
           </template>
         </el-table-column>
       </el-table-column>
-      <el-table-column label="表达能力及互动效果表达能力及互动效果（总占比总占比30分）">
+      <el-table-column label="表达能力及互动效果表达能力及互动效果（总占比30分）">
         <el-table-column prop="name" label="照本宣读、分享内容难以理解。气氛沉闷，无互动。（0~10）">
           <template slot-scope="scope">
             <p> </p>
@@ -59,7 +60,7 @@
         </el-table-column>
       </el-table-column>
     </el-table>
-    <el-button style="margin-top:30px;" type="primary" @click="submit">提交</el-button>
+    <el-button style="margin-top:30px;" type="primary" @click="submit" :disabled="theDisabled">提交</el-button>
   </el-form>
 </div>
 </template>
@@ -69,7 +70,10 @@ export default {
   name: 'index',
   data() {
     return {
-      loading: false,
+      id:"",
+      scoreDetail:{},
+      theDisabled: false,
+      loading: true,
       tableData: [{
         a: '评分'
       }],
@@ -85,7 +89,9 @@ export default {
                 callback("请输入数字")
               } else if (value < 0 || value > 50) {
                 callback("请输入0-50")
-              } else {
+              } else if(parseInt(value * 100)/100 != value ){
+                callback("最多两位小数");
+              }else {
                 callback();
               }
             }
@@ -101,6 +107,8 @@ export default {
                 callback("请输入数字")
               } else if (value < 0 || value > 30) {
                 callback("请输入0-30")
+              } else if(parseInt(value * 100)/100 != value ){
+                callback("最多两位小数");
               } else {
                 callback();
               }
@@ -117,6 +125,8 @@ export default {
                 callback("请输入数字")
               } else if (value < 0 || value > 20) {
                 callback("请输入0-20")
+              } else if(parseInt(value * 100)/100 != value ){
+                callback("最多两位小数");
               } else {
                 callback();
               }
@@ -131,17 +141,52 @@ export default {
     }
   },
   mounted() {
-    this.wsServer = new WebSocket('ws://192.168.1.16:8000');
-    this.wsServer.onopen = (e) => {
-      this.$message.success('连接服务成功');
-      this.loading = false;
-    };
+    let t = this;
+    this.id = this.$route.query.id;
+    this.$ajax({
+      method:"get",
+      url:'/score-statistical-detail?',
+      params:{
+        id:this.id
+      }
+    }).then((res)=>{
+      t.loading = false;
+      if(res.data.code!=200){
+        this.$message.error(res.data.message);
+        return;
+      }else{
+        if(res.data.data.scoreIsEnd == 1 || res.data.data.scoreIsEnd == 0 ){
+          this.$message({
+            type:'error',
+            message:'打分通道'+['未开启……','已关闭……'][res.data.data.scoreIsEnd],
+            onClose(){
+              t.$router.push('/index');
+            }
+          })
+        }
+        this.scoreDetail = res.data.data[0];
+      }
+
+    })
   },
   methods: {
     submit() {
+      const t = this;
       this.$refs.form.validate((val) => {
         if (val) {
-          this.wsServer.send(JSON.stringify(this.form));
+          let num = t.form.first+','+t.form.second+','+t.form.third;
+          this.$ajax({
+            url:"/set-score-item",
+            method:"post",
+            data:{
+              scoreId:t.id,
+              scoreNum:num
+            }
+          })
+          this.theDisabled=true;
+          sessionStorage.setItem('dis',1);
+          this.$message('提交成功');
+          this.$router.push('/index');
         }
       })
     },

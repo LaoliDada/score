@@ -3,8 +3,10 @@ var http = require('http');
 var WebSocket = require('ws');
 var fs = require('fs');
 const ejs = require('ejs');
+const query = require('./dataBase/conncetBase');
 
 var app = express();
+
 app.engine('html', ejs.__express);
 app.set('view engine', 'html');
 app.use(express.static(__dirname));
@@ -14,6 +16,12 @@ var wss = new WebSocket.Server({server});
 
 app.get('/index', function (req, res) {
   res.render('./index.html');
+})
+
+query("SELECT * FROM ScoreCore",(a,b,c)=>{
+  console.log('a_____',a);
+  console.log('b_____',b);
+  console.log('c_____',c);
 })
 
 wss.on('connection', function connection(ws) {
